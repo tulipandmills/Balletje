@@ -29,6 +29,43 @@
     }
     #level { font-size: 14px; letter-spacing: 2px; }
     #timer { font-size: 14px; letter-spacing: 2px; }
+    #settingsBtn {
+      background: none;
+      border: 1px solid #555;
+      color: #fff;
+      font-size: 16px;
+      width: 30px; height: 30px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0;
+    }
+    #settingsBtn:hover { border-color: #fff; }
+    #settings-panel {
+      position: fixed;
+      top: 44px; right: 0;
+      background: rgba(10,10,10,0.97);
+      border-left: 1px solid #333;
+      border-bottom: 1px solid #333;
+      padding: 20px;
+      z-index: 15;
+      display: none;
+      min-width: 220px;
+    }
+    #settings-panel h2 { font-size: 11px; letter-spacing: 3px; color: #888; margin-bottom: 16px; }
+    .setting-row { margin-bottom: 16px; }
+    .setting-label {
+      display: flex; justify-content: space-between;
+      font-size: 12px; letter-spacing: 1px; margin-bottom: 8px;
+    }
+    .setting-label span { color: #888; font-size: 11px; }
+    input[type=range] {
+      width: 100%; accent-color: #fff;
+      cursor: pointer;
+    }
+    .range-ticks {
+      display: flex; justify-content: space-between;
+      font-size: 10px; color: #555; margin-top: 4px; letter-spacing: 1px;
+    }
     canvas {
       display: block;
       touch-action: none;
@@ -89,6 +126,19 @@
 <div id="ui">
   <span id="level">LEVEL 1</span>
   <span id="timer">0.0s</span>
+  <button id="settingsBtn" title="Settings">⚙</button>
+</div>
+
+<div id="settings-panel">
+  <h2>SETTINGS</h2>
+  <div class="setting-row">
+    <div class="setting-label">
+      <span>GRAVITY</span>
+      <span id="gravityVal">0.65</span>
+    </div>
+    <input type="range" id="gravitySlider" min="0.1" max="1.5" step="0.05" value="0.65">
+    <div class="range-ticks"><span>SLOW</span><span>NORMAL</span><span>FAST</span></div>
+  </div>
 </div>
 
 <canvas id="c"></canvas>
@@ -229,7 +279,7 @@ window.addEventListener('resize', () => {
 });
 
 // Physics constants
-const GRAVITY = 0.65;
+let GRAVITY = 0.65;
 const FRICTION = 0.88;
 const BALL_R = CELL * 0.28;
 const MAX_SPEED = CELL * 0.45;
@@ -459,6 +509,27 @@ async function requestPermission() {
     window.addEventListener('deviceorientation', handleOrientation);
   }
 }
+
+// Settings panel
+const settingsBtn = document.getElementById('settingsBtn');
+const settingsPanel = document.getElementById('settings-panel');
+const gravitySlider = document.getElementById('gravitySlider');
+const gravityVal = document.getElementById('gravityVal');
+
+settingsBtn.addEventListener('click', () => {
+  settingsPanel.style.display = settingsPanel.style.display === 'block' ? 'none' : 'block';
+});
+
+document.addEventListener('click', e => {
+  if (!settingsPanel.contains(e.target) && e.target !== settingsBtn) {
+    settingsPanel.style.display = 'none';
+  }
+});
+
+gravitySlider.addEventListener('input', () => {
+  GRAVITY = parseFloat(gravitySlider.value);
+  gravityVal.textContent = GRAVITY.toFixed(2);
+});
 
 document.getElementById('startBtn').addEventListener('click', async () => {
   await requestPermission();
