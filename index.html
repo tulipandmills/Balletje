@@ -29,6 +29,43 @@
     }
     #level { font-size: 14px; letter-spacing: 2px; }
     #timer { font-size: 14px; letter-spacing: 2px; }
+    #settingsBtn {
+      background: none;
+      border: 1px solid #555;
+      color: #fff;
+      font-size: 16px;
+      width: 30px; height: 30px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0;
+    }
+    #settingsBtn:hover { border-color: #fff; }
+    #settings-panel {
+      position: fixed;
+      top: 44px; right: 0;
+      background: rgba(10,10,10,0.97);
+      border-left: 1px solid #333;
+      border-bottom: 1px solid #333;
+      padding: 20px;
+      z-index: 15;
+      display: none;
+      min-width: 220px;
+    }
+    #settings-panel h2 { font-size: 11px; letter-spacing: 3px; color: #888; margin-bottom: 16px; }
+    .setting-row { margin-bottom: 16px; }
+    .setting-label {
+      display: flex; justify-content: space-between;
+      font-size: 12px; letter-spacing: 1px; margin-bottom: 8px;
+    }
+    .setting-label span { color: #888; font-size: 11px; }
+    input[type=range] {
+      width: 100%; accent-color: #fff;
+      cursor: pointer;
+    }
+    .range-ticks {
+      display: flex; justify-content: space-between;
+      font-size: 10px; color: #555; margin-top: 4px; letter-spacing: 1px;
+    }
     canvas {
       display: block;
       touch-action: none;
@@ -89,6 +126,19 @@
 <div id="ui">
   <span id="level">LEVEL 1</span>
   <span id="timer">0.0s</span>
+  <button id="settingsBtn" title="Settings">⚙</button>
+</div>
+
+<div id="settings-panel">
+  <h2>SETTINGS</h2>
+  <div class="setting-row">
+    <div class="setting-label">
+      <span>GRAVITY</span>
+      <span id="gravityVal">0.65</span>
+    </div>
+    <input type="range" id="gravitySlider" min="0.1" max="1.5" step="0.05" value="0.65">
+    <div class="range-ticks"><span>SLOW</span><span>NORMAL</span><span>FAST</span></div>
+  </div>
 </div>
 
 <canvas id="c"></canvas>
@@ -118,8 +168,6 @@ const winTimeEl = document.getElementById('win-time');
 const CELL = 40;
 const WALL = 3;
 
-// Levels: each is a grid of walls. We use a recursive backtracker but pre-define a few levels
-// Format: array of [cols, rows] for progressively larger mazes
 const LEVEL_SIZES = [
   [7, 10],
   [9, 13],
@@ -186,7 +234,6 @@ function generateMaze(c, r) {
 
 function initLevel() {
   const sz = LEVEL_SIZES[Math.min(level, LEVEL_SIZES.length - 1)];
-  // For levels beyond predefined, grow the maze slightly
   const extra = Math.max(0, level - LEVEL_SIZES.length + 1);
   cols = sz[0] + extra * 2;
   rows = sz[1] + extra * 2;
@@ -215,9 +262,8 @@ function resizeCanvas() {
   canvas.width = W;
   canvas.height = H;
 
-  // Scale canvas to fit screen
   const maxW = window.innerWidth;
-  const maxH = window.innerHeight - 44; // minus UI bar
+  const maxH = window.innerHeight - 44;
   const scale = Math.min(maxW / W, maxH / H);
   canvas.style.width = (W * scale) + 'px';
   canvas.style.height = (H * scale) + 'px';
@@ -229,13 +275,12 @@ window.addEventListener('resize', () => {
 });
 
 // Physics constants
-const GRAVITY = 0.65;
+let GRAVITY = 0.65;
 const FRICTION = 0.88;
 const BALL_R = CELL * 0.28;
 const MAX_SPEED = CELL * 0.45;
 
 function update(dt) {
-  // Tilt from gyro or keyboard
   let ax = tiltX;
   let ay = tiltY;
 
@@ -250,18 +295,15 @@ function update(dt) {
   ball.vx *= FRICTION;
   ball.vy *= FRICTION;
 
-  // Clamp speed
   const spd = Math.sqrt(ball.vx*ball.vx + ball.vy*ball.vy);
   if (spd > MAX_SPEED) {
     ball.vx = ball.vx / spd * MAX_SPEED;
     ball.vy = ball.vy / spd * MAX_SPEED;
   }
 
-  // Move with collision
   moveBall(ball.vx, 0);
   moveBall(0, ball.vy);
 
-  // Check win: ball in last cell and past exit
   const cellX = Math.floor(ball.x / CELL);
   const cellY = Math.floor(ball.y / CELL);
   if (cellX === cols-1 && cellY === rows-1 && ball.y > (rows-1) * CELL + CELL * 0.7) {
@@ -276,29 +318,24 @@ function moveBall(dx, dy) {
   const cx = Math.floor(ball.x / CELL);
   const cy = Math.floor(ball.y / CELL);
 
-  // Check wall collisions
   const cell = maze[cy] && maze[cy][cx];
   if (!cell) return;
 
-  // Left wall of current cell
   if (dx < 0 && cell.walls.left && nx - BALL_R < cx * CELL) {
     ball.x = cx * CELL + BALL_R;
     ball.vx *= -0.3;
     return;
   }
-  // Right wall
   if (dx > 0 && cell.walls.right && nx + BALL_R > (cx+1) * CELL) {
     ball.x = (cx+1) * CELL - BALL_R;
     ball.vx *= -0.3;
     return;
   }
-  // Top wall
   if (dy < 0 && cell.walls.top && ny - BALL_R < cy * CELL) {
     ball.y = cy * CELL + BALL_R;
     ball.vy *= -0.3;
     return;
   }
-  // Bottom wall (allow exit)
   if (dy > 0 && cell.walls.bottom) {
     if (ny + BALL_R > (cy+1) * CELL) {
       ball.y = (cy+1) * CELL - BALL_R;
@@ -349,7 +386,6 @@ function drawMaze() {
     }
   }
 
-  // Outer border (except exit gap at bottom-right)
   ctx.strokeStyle = '#fff';
   ctx.lineWidth = WALL + 1;
   ctx.beginPath();
@@ -368,26 +404,22 @@ function drawMaze() {
 function drawExit() {
   const ex = (cols-1) * CELL;
   const ey = (rows-1) * CELL;
-  // Highlight exit gap
   ctx.fillStyle = '#333';
   ctx.fillRect(ex + WALL, ey + CELL - WALL * 2, CELL - WALL, WALL * 4);
 
-  // Exit arrow
   ctx.fillStyle = '#888';
   ctx.font = `${CELL * 0.4}px monospace`;
   ctx.textAlign = 'center';
-  ctx.fillText('▼', ex + CELL / 2, ey + CELL * 0.65);
+  ctx.fillText('\u25bc', ex + CELL / 2, ey + CELL * 0.65);
 }
 
 function drawBall() {
   const r = BALL_R;
-  // Shadow
   ctx.beginPath();
   ctx.arc(ball.x + 2, ball.y + 2, r, 0, Math.PI * 2);
   ctx.fillStyle = 'rgba(0,0,0,0.5)';
   ctx.fill();
 
-  // Ball
   const grad = ctx.createRadialGradient(ball.x - r*0.3, ball.y - r*0.3, r*0.1, ball.x, ball.y, r);
   grad.addColorStop(0, '#fff');
   grad.addColorStop(0.6, '#ccc');
@@ -407,7 +439,6 @@ function gameLoop(ts) {
   update(dt);
   draw();
 
-  // Update timer
   const elapsed = (performance.now() - startTime) / 1000;
   timerEl.textContent = elapsed.toFixed(1) + 's';
 
@@ -432,20 +463,16 @@ document.getElementById('nextBtn').addEventListener('click', () => {
 
 // Device orientation
 function handleOrientation(e) {
-  // gamma = left/right tilt (-90 to 90)
-  // beta = front/back tilt (-180 to 180)
-  const gamma = e.gamma || 0; // x-axis tilt
-  const beta = e.beta || 0;   // y-axis tilt
+  const gamma = e.gamma || 0;
+  const beta = e.beta || 0;
 
-  // Normalize to -1..1 with ±30° = full speed
   tiltX = Math.max(-1, Math.min(1, gamma / 30));
-  tiltY = Math.max(-1, Math.min(1, (beta - 20) / 30)); // 20° offset for natural hold angle
+  tiltY = Math.max(-1, Math.min(1, (beta - 20) / 30));
 }
 
 async function requestPermission() {
   if (typeof DeviceOrientationEvent !== 'undefined' &&
       typeof DeviceOrientationEvent.requestPermission === 'function') {
-    // iOS 13+
     try {
       const perm = await DeviceOrientationEvent.requestPermission();
       if (perm === 'granted') {
@@ -455,10 +482,30 @@ async function requestPermission() {
       console.log('Permission denied or error', e);
     }
   } else {
-    // Android / non-iOS
     window.addEventListener('deviceorientation', handleOrientation);
   }
 }
+
+// Settings panel
+const settingsBtn = document.getElementById('settingsBtn');
+const settingsPanel = document.getElementById('settings-panel');
+const gravitySlider = document.getElementById('gravitySlider');
+const gravityVal = document.getElementById('gravityVal');
+
+settingsBtn.addEventListener('click', () => {
+  settingsPanel.style.display = settingsPanel.style.display === 'block' ? 'none' : 'block';
+});
+
+document.addEventListener('click', e => {
+  if (!settingsPanel.contains(e.target) && e.target !== settingsBtn) {
+    settingsPanel.style.display = 'none';
+  }
+});
+
+gravitySlider.addEventListener('input', () => {
+  GRAVITY = parseFloat(gravitySlider.value);
+  gravityVal.textContent = GRAVITY.toFixed(2);
+});
 
 document.getElementById('startBtn').addEventListener('click', async () => {
   await requestPermission();
