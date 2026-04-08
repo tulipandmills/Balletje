@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Maze Ball</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+      font-family: monospace;
+      color: #fff;
+    }
+    #ui {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 16px;
+      background: rgba(0,0,0,0.8);
+      z-index: 10;
+    }
+    #level { font-size: 14px; letter-spacing: 2px; }
+    #timer { font-size: 14px; letter-spacing: 2px; }
+    canvas {
+      display: block;
+      touch-action: none;
+    }
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      text-align: center;
+      padding: 24px;
+    }
+    #overlay h1 { font-size: 2rem; letter-spacing: 4px; margin-bottom: 16px; }
+    #overlay p { font-size: 0.9rem; color: #aaa; margin-bottom: 32px; line-height: 1.6; }
+    #overlay button {
+      background: #fff;
+      color: #000;
+      border: none;
+      padding: 14px 40px;
+      font-size: 1rem;
+      font-family: monospace;
+      letter-spacing: 3px;
+      cursor: pointer;
+    }
+    #overlay button:hover { background: #ccc; }
+    #win-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.9);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      text-align: center;
+      padding: 24px;
+    }
+    #win-overlay h1 { font-size: 2rem; letter-spacing: 4px; margin-bottom: 16px; }
+    #win-overlay p { color: #aaa; margin-bottom: 32px; }
+    #win-overlay button {
+      background: #fff;
+      color: #000;
+      border: none;
+      padding: 14px 40px;
+      font-size: 1rem;
+      font-family: monospace;
+      letter-spacing: 3px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div id="ui">
+  <span id="level">LEVEL 1</span>
+  <span id="timer">0.0s</span>
+</div>
+
+<canvas id="c"></canvas>
+
+<div id="overlay">
+  <h1>MAZE BALL</h1>
+  <p>Tilt your phone to roll the ball<br>through the maze to the exit.<br><br>On desktop, use arrow keys.</p>
+  <button id="startBtn">START</button>
+</div>
+
+<div id="win-overlay" id="winScreen">
+  <h1>LEVEL CLEAR</h1>
+  <p id="win-time">Time: 0.0s</p>
+  <button id="nextBtn">NEXT LEVEL</button>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const overlay = document.getElementById('overlay');
+const winOverlay = document.getElementById('win-overlay');
+const levelEl = document.getElementById('level');
+const timerEl = document.getElementById('timer');
+const winTimeEl = document.getElementById('win-time');
+
+// Maze cell size
+const CELL = 40;
+const WALL = 3;
+
+// Levels: each is a grid of walls. We use a recursive backtracker but pre-define a few levels
+// Format: array of [cols, rows] for progressively larger mazes
+const LEVEL_SIZES = [
+  [7, 10],
+  [9, 13],
+  [11, 16],
+  [13, 19],
+  [15, 22],
+];
+
+let level = 0;
+let maze = null;
+let cols, rows;
+let ball = { x: 0, y: 0, vx: 0, vy: 0 };
+let tiltX = 0, tiltY = 0;
+let startTime = null;
+let animFrame = null;
+let running = false;
+let permissionGranted = false;
+
+// Keyboard fallback
+const keys = {};
+window.addEventListener('keydown', e => { keys[e.key] = true; });
+window.addEventListener('keyup', e => { keys[e.key] = false; });
+
+// Generate maze using recursive backtracker
+function generateMaze(c, r) {
+  const grid = Array.from({length: r}, () => Array.from({length: c}, () => ({
+    visited: false,
+    walls: { top: true, right: true, bottom: true, left: true }
+  })));
+
+  function idx(x, y) { return y * c + x; }
+
+  const stack = [];
+  let cx = 0, cy = 0;
+  grid[cy][cx].visited = true;
+  stack.push([cx, cy]);
+
+  const dirs = [
+    [0, -1, 'top', 'bottom'],
+    [1, 0, 'right', 'left'],
+    [0, 1, 'bottom', 'top'],
+    [-1, 0, 'left', 'right'],
+  ];
+
+  while (stack.length) {
+    const [x, y] = stack[stack.length - 1];
+    const neighbors = dirs
+      .map(([dx, dy, w1, w2]) => [x+dx, y+dy, w1, w2])
+      .filter(([nx, ny]) => nx >= 0 && nx < c && ny >= 0 && ny < r && !grid[ny][nx].visited);
+
+    if (neighbors.length === 0) {
+      stack.pop();
+    } else {
+      const [nx, ny, w1, w2] = neighbors[Math.floor(Math.random() * neighbors.length)];
+      grid[y][x].walls[w1] = false;
+      grid[ny][nx].walls[w2] = false;
+      grid[ny][nx].visited = true;
+      stack.push([nx, ny]);
+    }
+  }
+
+  return grid;
+}
+
+function initLevel() {
+  const sz = LEVEL_SIZES[Math.min(level, LEVEL_SIZES.length - 1)];
+  // For levels beyond predefined, grow the maze slightly
+  const extra = Math.max(0, level - LEVEL_SIZES.length + 1);
+  cols = sz[0] + extra * 2;
+  rows = sz[1] + extra * 2;
+
+  maze = generateMaze(cols, rows);
+
+  // Open exit at bottom-right
+  maze[rows-1][cols-1].walls.bottom = false;
+
+  resizeCanvas();
+
+  // Place ball in center of starting cell (top-left)
+  ball.x = CELL * 0.5;
+  ball.y = CELL * 0.5;
+  ball.vx = 0;
+  ball.vy = 0;
+
+  levelEl.textContent = 'LEVEL ' + (level + 1);
+  startTime = performance.now();
+  running = true;
+}
+
+function resizeCanvas() {
+  const W = cols * CELL;
+  const H = rows * CELL;
+  canvas.width = W;
+  canvas.height = H;
+
+  // Scale canvas to fit screen
+  const maxW = window.innerWidth;
+  const maxH = window.innerHeight - 44; // minus UI bar
+  const scale = Math.min(maxW / W, maxH / H);
+  canvas.style.width = (W * scale) + 'px';
+  canvas.style.height = (H * scale) + 'px';
+  canvas.style.marginTop = '44px';
+}
+
+window.addEventListener('resize', () => {
+  if (maze) resizeCanvas();
+});
+
+// Physics constants
+const GRAVITY = 0.35;
+const FRICTION = 0.85;
+const BALL_R = CELL * 0.28;
+const MAX_SPEED = CELL * 0.22;
+
+function update(dt) {
+  // Tilt from gyro or keyboard
+  let ax = tiltX;
+  let ay = tiltY;
+
+  if (keys['ArrowLeft'])  ax = -1;
+  if (keys['ArrowRight']) ax = 1;
+  if (keys['ArrowUp'])    ay = -1;
+  if (keys['ArrowDown'])  ay = 1;
+
+  ball.vx += ax * GRAVITY;
+  ball.vy += ay * GRAVITY;
+
+  ball.vx *= FRICTION;
+  ball.vy *= FRICTION;
+
+  // Clamp speed
+  const spd = Math.sqrt(ball.vx*ball.vx + ball.vy*ball.vy);
+  if (spd > MAX_SPEED) {
+    ball.vx = ball.vx / spd * MAX_SPEED;
+    ball.vy = ball.vy / spd * MAX_SPEED;
+  }
+
+  // Move with collision
+  moveBall(ball.vx, 0);
+  moveBall(0, ball.vy);
+
+  // Check win: ball in last cell and past exit
+  const cellX = Math.floor(ball.x / CELL);
+  const cellY = Math.floor(ball.y / CELL);
+  if (cellX === cols-1 && cellY === rows-1 && ball.y > (rows-1) * CELL + CELL * 0.7) {
+    winLevel();
+  }
+}
+
+function moveBall(dx, dy) {
+  const nx = ball.x + dx;
+  const ny = ball.y + dy;
+
+  const cx = Math.floor(ball.x / CELL);
+  const cy = Math.floor(ball.y / CELL);
+
+  // Check wall collisions
+  const cell = maze[cy] && maze[cy][cx];
+  if (!cell) return;
+
+  // Left wall of current cell
+  if (dx < 0 && cell.walls.left && nx - BALL_R < cx * CELL) {
+    ball.x = cx * CELL + BALL_R;
+    ball.vx *= -0.3;
+    return;
+  }
+  // Right wall
+  if (dx > 0 && cell.walls.right && nx + BALL_R > (cx+1) * CELL) {
+    ball.x = (cx+1) * CELL - BALL_R;
+    ball.vx *= -0.3;
+    return;
+  }
+  // Top wall
+  if (dy < 0 && cell.walls.top && ny - BALL_R < cy * CELL) {
+    ball.y = cy * CELL + BALL_R;
+    ball.vy *= -0.3;
+    return;
+  }
+  // Bottom wall (allow exit)
+  if (dy > 0 && cell.walls.bottom) {
+    if (ny + BALL_R > (cy+1) * CELL) {
+      ball.y = (cy+1) * CELL - BALL_R;
+      ball.vy *= -0.3;
+      return;
+    }
+  }
+
+  if (dx !== 0) ball.x = nx;
+  if (dy !== 0) ball.y = ny;
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  drawMaze();
+  drawBall();
+  drawExit();
+}
+
+function drawMaze() {
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = WALL;
+  ctx.lineCap = 'square';
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const cell = maze[r][c];
+      const x = c * CELL;
+      const y = r * CELL;
+
+      ctx.beginPath();
+      if (cell.walls.top) {
+        ctx.moveTo(x, y); ctx.lineTo(x + CELL, y);
+      }
+      if (cell.walls.right) {
+        ctx.moveTo(x + CELL, y); ctx.lineTo(x + CELL, y + CELL);
+      }
+      if (cell.walls.bottom) {
+        ctx.moveTo(x, y + CELL); ctx.lineTo(x + CELL, y + CELL);
+      }
+      if (cell.walls.left) {
+        ctx.moveTo(x, y); ctx.lineTo(x, y + CELL);
+      }
+      ctx.stroke();
+    }
+  }
+
+  // Outer border (except exit gap at bottom-right)
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = WALL + 1;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(canvas.width, 0);
+  ctx.lineTo(canvas.width, (rows-1) * CELL);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(canvas.width, rows * CELL);
+  ctx.lineTo(canvas.width, canvas.height);
+  ctx.lineTo(0, canvas.height);
+  ctx.lineTo(0, 0);
+  ctx.stroke();
+}
+
+function drawExit() {
+  const ex = (cols-1) * CELL;
+  const ey = (rows-1) * CELL;
+  // Highlight exit gap
+  ctx.fillStyle = '#333';
+  ctx.fillRect(ex + WALL, ey + CELL - WALL * 2, CELL - WALL, WALL * 4);
+
+  // Exit arrow
+  ctx.fillStyle = '#888';
+  ctx.font = `${CELL * 0.4}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillText('▼', ex + CELL / 2, ey + CELL * 0.65);
+}
+
+function drawBall() {
+  const r = BALL_R;
+  // Shadow
+  ctx.beginPath();
+  ctx.arc(ball.x + 2, ball.y + 2, r, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fill();
+
+  // Ball
+  const grad = ctx.createRadialGradient(ball.x - r*0.3, ball.y - r*0.3, r*0.1, ball.x, ball.y, r);
+  grad.addColorStop(0, '#fff');
+  grad.addColorStop(0.6, '#ccc');
+  grad.addColorStop(1, '#555');
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, r, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+}
+
+let lastTime = 0;
+function gameLoop(ts) {
+  if (!running) return;
+  const dt = Math.min((ts - lastTime) / 16.67, 3);
+  lastTime = ts;
+
+  update(dt);
+  draw();
+
+  // Update timer
+  const elapsed = (performance.now() - startTime) / 1000;
+  timerEl.textContent = elapsed.toFixed(1) + 's';
+
+  animFrame = requestAnimationFrame(gameLoop);
+}
+
+function winLevel() {
+  running = false;
+  cancelAnimationFrame(animFrame);
+  const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
+  winTimeEl.textContent = 'Time: ' + elapsed + 's';
+  winOverlay.style.display = 'flex';
+}
+
+document.getElementById('nextBtn').addEventListener('click', () => {
+  level++;
+  winOverlay.style.display = 'none';
+  initLevel();
+  lastTime = performance.now();
+  animFrame = requestAnimationFrame(gameLoop);
+});
+
+// Device orientation
+function handleOrientation(e) {
+  // gamma = left/right tilt (-90 to 90)
+  // beta = front/back tilt (-180 to 180)
+  const gamma = e.gamma || 0; // x-axis tilt
+  const beta = e.beta || 0;   // y-axis tilt
+
+  // Normalize to -1..1 with ±30° = full speed
+  tiltX = Math.max(-1, Math.min(1, gamma / 30));
+  tiltY = Math.max(-1, Math.min(1, (beta - 20) / 30)); // 20° offset for natural hold angle
+}
+
+async function requestPermission() {
+  if (typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function') {
+    // iOS 13+
+    try {
+      const perm = await DeviceOrientationEvent.requestPermission();
+      if (perm === 'granted') {
+        window.addEventListener('deviceorientation', handleOrientation);
+      }
+    } catch(e) {
+      console.log('Permission denied or error', e);
+    }
+  } else {
+    // Android / non-iOS
+    window.addEventListener('deviceorientation', handleOrientation);
+  }
+}
+
+document.getElementById('startBtn').addEventListener('click', async () => {
+  await requestPermission();
+  overlay.style.display = 'none';
+  initLevel();
+  lastTime = performance.now();
+  animFrame = requestAnimationFrame(gameLoop);
+});
+</script>
+</body>
+</html>
