@@ -49,76 +49,46 @@
       padding: 20px;
       z-index: 15;
       display: none;
-      min-width: 220px;
+      min-width: 230px;
     }
     #settings-panel h2 { font-size: 11px; letter-spacing: 3px; color: #888; margin-bottom: 16px; }
-    .setting-row { margin-bottom: 16px; }
+    .setting-row { margin-bottom: 14px; }
     .setting-label {
       display: flex; justify-content: space-between;
-      font-size: 12px; letter-spacing: 1px; margin-bottom: 8px;
+      font-size: 12px; letter-spacing: 1px; margin-bottom: 6px;
     }
     .setting-label span { color: #888; font-size: 11px; }
-    input[type=range] {
-      width: 100%; accent-color: #fff;
-      cursor: pointer;
-    }
+    input[type=range] { width: 100%; accent-color: #fff; cursor: pointer; }
     .range-ticks {
       display: flex; justify-content: space-between;
       font-size: 10px; color: #555; margin-top: 4px; letter-spacing: 1px;
     }
-    canvas {
-      display: block;
-      touch-action: none;
-    }
+    .setting-divider { border-top: 1px solid #222; margin: 14px 0; }
+    canvas { display: block; touch-action: none; }
     #overlay {
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       background: rgba(0,0,0,0.9);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 20;
-      text-align: center;
-      padding: 24px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 20; text-align: center; padding: 24px;
     }
     #overlay h1 { font-size: 2rem; letter-spacing: 4px; margin-bottom: 16px; }
     #overlay p { font-size: 0.9rem; color: #aaa; margin-bottom: 32px; line-height: 1.6; }
-    #overlay button {
-      background: #fff;
-      color: #000;
-      border: none;
-      padding: 14px 40px;
-      font-size: 1rem;
-      font-family: monospace;
-      letter-spacing: 3px;
-      cursor: pointer;
+    #overlay button, #win-overlay button {
+      background: #fff; color: #000; border: none;
+      padding: 14px 40px; font-size: 1rem;
+      font-family: monospace; letter-spacing: 3px; cursor: pointer;
     }
-    #overlay button:hover { background: #ccc; }
+    #overlay button:hover, #win-overlay button:hover { background: #ccc; }
     #win-overlay {
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       background: rgba(0,0,0,0.9);
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 20;
-      text-align: center;
-      padding: 24px;
+      display: none; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 20; text-align: center; padding: 24px;
     }
     #win-overlay h1 { font-size: 2rem; letter-spacing: 4px; margin-bottom: 16px; }
     #win-overlay p { color: #aaa; margin-bottom: 32px; }
-    #win-overlay button {
-      background: #fff;
-      color: #000;
-      border: none;
-      padding: 14px 40px;
-      font-size: 1rem;
-      font-family: monospace;
-      letter-spacing: 3px;
-      cursor: pointer;
-    }
   </style>
 </head>
 <body>
@@ -131,13 +101,31 @@
 
 <div id="settings-panel">
   <h2>SETTINGS</h2>
+
   <div class="setting-row">
-    <div class="setting-label">
-      <span>GRAVITY</span>
-      <span id="gravityVal">0.65</span>
-    </div>
-    <input type="range" id="gravitySlider" min="0.1" max="1.5" step="0.05" value="0.65">
-    <div class="range-ticks"><span>SLOW</span><span>NORMAL</span><span>FAST</span></div>
+    <div class="setting-label"><span>GRAVITY</span><span id="gravityVal">0.65</span></div>
+    <input type="range" id="gravitySlider" min="0.10" max="1.50" step="0.05" value="0.65">
+    <div class="range-ticks"><span>LOW</span><span>HIGH</span></div>
+  </div>
+
+  <div class="setting-row">
+    <div class="setting-label"><span>FRICTION</span><span id="frictionVal">0.88</span></div>
+    <input type="range" id="frictionSlider" min="0.70" max="0.99" step="0.01" value="0.88">
+    <div class="range-ticks"><span>GRIPPY</span><span>SLICK</span></div>
+  </div>
+
+  <div class="setting-row">
+    <div class="setting-label"><span>MAX SPEED</span><span id="speedVal">0.45</span></div>
+    <input type="range" id="speedSlider" min="0.15" max="0.80" step="0.05" value="0.45">
+    <div class="range-ticks"><span>SLOW</span><span>FAST</span></div>
+  </div>
+
+  <div class="setting-divider"></div>
+
+  <div class="setting-row">
+    <div class="setting-label"><span>HOLES</span><span id="holesVal">3</span></div>
+    <input type="range" id="holesSlider" min="0" max="15" step="1" value="3">
+    <div class="range-ticks"><span>NONE</span><span>MANY</span></div>
   </div>
 </div>
 
@@ -145,11 +133,11 @@
 
 <div id="overlay">
   <h1>MAZE BALL</h1>
-  <p>Tilt your phone to roll the ball<br>through the maze to the exit.<br><br>On desktop, use arrow keys.</p>
+  <p>Tilt your phone to roll the ball<br>through the maze to the exit.<br><br>Avoid the holes — they reset you.<br><br>On desktop, use arrow keys.</p>
   <button id="startBtn">START</button>
 </div>
 
-<div id="win-overlay" id="winScreen">
+<div id="win-overlay">
   <h1>LEVEL CLEAR</h1>
   <p id="win-time">Time: 0.0s</p>
   <button id="nextBtn">NEXT LEVEL</button>
@@ -164,95 +152,114 @@ const levelEl = document.getElementById('level');
 const timerEl = document.getElementById('timer');
 const winTimeEl = document.getElementById('win-time');
 
-// Maze cell size
 const CELL = 40;
 const WALL = 3;
+const BALL_R = CELL * 0.28;
 
-// Levels: each is a grid of walls. We use a recursive backtracker but pre-define a few levels
-// Format: array of [cols, rows] for progressively larger mazes
 const LEVEL_SIZES = [
-  [7, 10],
-  [9, 13],
-  [11, 16],
-  [13, 19],
-  [15, 22],
+  [7, 10], [9, 13], [11, 16], [13, 19], [15, 22],
 ];
+
+// Settings
+let GRAVITY      = 0.65;
+let FRICTION     = 0.88;
+let MAX_SPEED_M  = 0.45; // multiplied by CELL
+let HOLE_COUNT   = 3;
 
 let level = 0;
 let maze = null;
 let cols, rows;
 let ball = { x: 0, y: 0, vx: 0, vy: 0 };
+let holes = [];
 let tiltX = 0, tiltY = 0;
 let startTime = null;
 let animFrame = null;
 let running = false;
-let permissionGranted = false;
 
-// Keyboard fallback
+// Fall animation state
+let falling = false;
+let fallProgress = 0;
+let fallStartX = 0, fallStartY = 0;
+let fallTarget = null;
+let deathFlash = 0;
+
 const keys = {};
 window.addEventListener('keydown', e => { keys[e.key] = true; });
-window.addEventListener('keyup', e => { keys[e.key] = false; });
+window.addEventListener('keyup',   e => { keys[e.key] = false; });
 
-// Generate maze using recursive backtracker
+// ─── Maze generation ──────────────────────────────────────────────────────────
+
 function generateMaze(c, r) {
-  const grid = Array.from({length: r}, () => Array.from({length: c}, () => ({
-    visited: false,
-    walls: { top: true, right: true, bottom: true, left: true }
-  })));
-
-  function idx(x, y) { return y * c + x; }
-
+  const grid = Array.from({length: r}, () =>
+    Array.from({length: c}, () => ({
+      visited: false,
+      walls: { top: true, right: true, bottom: true, left: true }
+    }))
+  );
   const stack = [];
   let cx = 0, cy = 0;
   grid[cy][cx].visited = true;
   stack.push([cx, cy]);
-
   const dirs = [
-    [0, -1, 'top', 'bottom'],
-    [1, 0, 'right', 'left'],
-    [0, 1, 'bottom', 'top'],
-    [-1, 0, 'left', 'right'],
+    [0,-1,'top','bottom'], [1,0,'right','left'],
+    [0,1,'bottom','top'],  [-1,0,'left','right'],
   ];
-
   while (stack.length) {
     const [x, y] = stack[stack.length - 1];
-    const neighbors = dirs
-      .map(([dx, dy, w1, w2]) => [x+dx, y+dy, w1, w2])
-      .filter(([nx, ny]) => nx >= 0 && nx < c && ny >= 0 && ny < r && !grid[ny][nx].visited);
-
-    if (neighbors.length === 0) {
-      stack.pop();
-    } else {
-      const [nx, ny, w1, w2] = neighbors[Math.floor(Math.random() * neighbors.length)];
-      grid[y][x].walls[w1] = false;
-      grid[ny][nx].walls[w2] = false;
-      grid[ny][nx].visited = true;
-      stack.push([nx, ny]);
-    }
+    const nb = dirs
+      .map(([dx,dy,w1,w2]) => [x+dx, y+dy, w1, w2])
+      .filter(([nx,ny]) => nx>=0 && nx<c && ny>=0 && ny<r && !grid[ny][nx].visited);
+    if (!nb.length) { stack.pop(); continue; }
+    const [nx,ny,w1,w2] = nb[Math.floor(Math.random() * nb.length)];
+    grid[y][x].walls[w1] = false;
+    grid[ny][nx].walls[w2] = false;
+    grid[ny][nx].visited = true;
+    stack.push([nx, ny]);
   }
-
   return grid;
 }
 
+// ─── Hole placement ───────────────────────────────────────────────────────────
+
+function placeHoles() {
+  const forbidden = new Set();
+  // Protect start area and goal area
+  [[0,0],[1,0],[0,1],[1,1]].forEach(([c,r]) => forbidden.add(`${c},${r}`));
+  [[cols-1,rows-1],[cols-2,rows-1],[cols-1,rows-2],[cols-2,rows-2]]
+    .forEach(([c,r]) => forbidden.add(`${c},${r}`));
+
+  const candidates = [];
+  for (let r = 0; r < rows; r++)
+    for (let c = 0; c < cols; c++)
+      if (!forbidden.has(`${c},${r}`)) candidates.push([c, r]);
+
+  // Fisher-Yates shuffle
+  for (let i = candidates.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+  }
+
+  return candidates.slice(0, Math.min(HOLE_COUNT, candidates.length))
+    .map(([c, r]) => ({ cx: c, cy: r, x: (c+0.5)*CELL, y: (r+0.5)*CELL }));
+}
+
+// ─── Level init ───────────────────────────────────────────────────────────────
+
 function initLevel() {
   const sz = LEVEL_SIZES[Math.min(level, LEVEL_SIZES.length - 1)];
-  // For levels beyond predefined, grow the maze slightly
   const extra = Math.max(0, level - LEVEL_SIZES.length + 1);
   cols = sz[0] + extra * 2;
   rows = sz[1] + extra * 2;
 
   maze = generateMaze(cols, rows);
-
-  // Open exit at bottom-right
   maze[rows-1][cols-1].walls.bottom = false;
+  holes = placeHoles();
 
   resizeCanvas();
 
-  // Place ball in center of starting cell (top-left)
-  ball.x = CELL * 0.5;
-  ball.y = CELL * 0.5;
-  ball.vx = 0;
-  ball.vy = 0;
+  ball.x = CELL * 0.5; ball.y = CELL * 0.5;
+  ball.vx = 0; ball.vy = 0;
+  falling = false; fallProgress = 0; deathFlash = 0;
 
   levelEl.textContent = 'LEVEL ' + (level + 1);
   startTime = performance.now();
@@ -260,106 +267,82 @@ function initLevel() {
 }
 
 function resizeCanvas() {
-  const W = cols * CELL;
-  const H = rows * CELL;
-  canvas.width = W;
-  canvas.height = H;
-
-  // Scale canvas to fit screen
-  const maxW = window.innerWidth;
-  const maxH = window.innerHeight - 44; // minus UI bar
-  const scale = Math.min(maxW / W, maxH / H);
-  canvas.style.width = (W * scale) + 'px';
+  const W = cols * CELL, H = rows * CELL;
+  canvas.width = W; canvas.height = H;
+  const scale = Math.min(window.innerWidth / W, (window.innerHeight - 44) / H);
+  canvas.style.width  = (W * scale) + 'px';
   canvas.style.height = (H * scale) + 'px';
   canvas.style.marginTop = '44px';
 }
 
-window.addEventListener('resize', () => {
-  if (maze) resizeCanvas();
-});
+window.addEventListener('resize', () => { if (maze) resizeCanvas(); });
 
-// Physics constants
-let GRAVITY = 0.65;
-const FRICTION = 0.88;
-const BALL_R = CELL * 0.28;
-const MAX_SPEED = CELL * 0.45;
+// ─── Physics ──────────────────────────────────────────────────────────────────
 
 function update(dt) {
-  // Tilt from gyro or keyboard
-  let ax = tiltX;
-  let ay = tiltY;
+  if (falling) {
+    fallProgress += 0.045 * dt;
+    if (fallProgress >= 1) {
+      falling = false; fallProgress = 0; fallTarget = null;
+      ball.x = CELL * 0.5; ball.y = CELL * 0.5;
+      ball.vx = 0; ball.vy = 0;
+      deathFlash = 1;
+    }
+    return;
+  }
 
+  let ax = tiltX, ay = tiltY;
   if (keys['ArrowLeft'])  ax = -1;
   if (keys['ArrowRight']) ax = 1;
   if (keys['ArrowUp'])    ay = -1;
   if (keys['ArrowDown'])  ay = 1;
 
-  ball.vx += ax * GRAVITY;
-  ball.vy += ay * GRAVITY;
-
+  ball.vx += ax * GRAVITY * dt;
+  ball.vy += ay * GRAVITY * dt;
   ball.vx *= FRICTION;
   ball.vy *= FRICTION;
 
-  // Clamp speed
   const spd = Math.sqrt(ball.vx*ball.vx + ball.vy*ball.vy);
-  if (spd > MAX_SPEED) {
-    ball.vx = ball.vx / spd * MAX_SPEED;
-    ball.vy = ball.vy / spd * MAX_SPEED;
-  }
+  const maxSpd = MAX_SPEED_M * CELL;
+  if (spd > maxSpd) { ball.vx = ball.vx/spd*maxSpd; ball.vy = ball.vy/spd*maxSpd; }
 
-  // Move with collision
   moveBall(ball.vx, 0);
   moveBall(0, ball.vy);
 
-  // Check win: ball in last cell and past exit
-  const cellX = Math.floor(ball.x / CELL);
-  const cellY = Math.floor(ball.y / CELL);
-  if (cellX === cols-1 && cellY === rows-1 && ball.y > (rows-1) * CELL + CELL * 0.7) {
-    winLevel();
-  }
-}
-
-function moveBall(dx, dy) {
-  const nx = ball.x + dx;
-  const ny = ball.y + dy;
-
-  const cx = Math.floor(ball.x / CELL);
-  const cy = Math.floor(ball.y / CELL);
-
-  // Check wall collisions
-  const cell = maze[cy] && maze[cy][cx];
-  if (!cell) return;
-
-  // Left wall of current cell
-  if (dx < 0 && cell.walls.left && nx - BALL_R < cx * CELL) {
-    ball.x = cx * CELL + BALL_R;
-    ball.vx *= -0.3;
-    return;
-  }
-  // Right wall
-  if (dx > 0 && cell.walls.right && nx + BALL_R > (cx+1) * CELL) {
-    ball.x = (cx+1) * CELL - BALL_R;
-    ball.vx *= -0.3;
-    return;
-  }
-  // Top wall
-  if (dy < 0 && cell.walls.top && ny - BALL_R < cy * CELL) {
-    ball.y = cy * CELL + BALL_R;
-    ball.vy *= -0.3;
-    return;
-  }
-  // Bottom wall (allow exit)
-  if (dy > 0 && cell.walls.bottom) {
-    if (ny + BALL_R > (cy+1) * CELL) {
-      ball.y = (cy+1) * CELL - BALL_R;
-      ball.vy *= -0.3;
+  // Hole check
+  for (const h of holes) {
+    const dx = ball.x - h.x, dy = ball.y - h.y;
+    if (Math.sqrt(dx*dx + dy*dy) < CELL * 0.28) {
+      falling = true; fallProgress = 0;
+      fallStartX = ball.x; fallStartY = ball.y;
+      fallTarget = { x: h.x, y: h.y };
+      ball.vx = 0; ball.vy = 0;
+      deathFlash = 1;
       return;
     }
   }
 
+  // Win check
+  const cellX = Math.floor(ball.x / CELL), cellY = Math.floor(ball.y / CELL);
+  if (cellX === cols-1 && cellY === rows-1 && ball.y > (rows-1)*CELL + CELL*0.7) winLevel();
+}
+
+function moveBall(dx, dy) {
+  const nx = ball.x + dx, ny = ball.y + dy;
+  const cx = Math.floor(ball.x / CELL), cy = Math.floor(ball.y / CELL);
+  const cell = maze[cy] && maze[cy][cx];
+  if (!cell) return;
+
+  if (dx < 0 && cell.walls.left   && nx - BALL_R < cx*CELL)       { ball.x = cx*CELL + BALL_R;     ball.vx *= -0.3; return; }
+  if (dx > 0 && cell.walls.right  && nx + BALL_R > (cx+1)*CELL)   { ball.x = (cx+1)*CELL - BALL_R; ball.vx *= -0.3; return; }
+  if (dy < 0 && cell.walls.top    && ny - BALL_R < cy*CELL)        { ball.y = cy*CELL + BALL_R;     ball.vy *= -0.3; return; }
+  if (dy > 0 && cell.walls.bottom && ny + BALL_R > (cy+1)*CELL)   { ball.y = (cy+1)*CELL - BALL_R; ball.vy *= -0.3; return; }
+
   if (dx !== 0) ball.x = nx;
   if (dy !== 0) ball.y = ny;
 }
+
+// ─── Drawing ──────────────────────────────────────────────────────────────────
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -367,108 +350,122 @@ function draw() {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   drawMaze();
-  drawBall();
+  drawHoles();
   drawExit();
+  drawBall();
+
+  if (deathFlash > 0) {
+    ctx.fillStyle = `rgba(255,255,255,${deathFlash * 0.18})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    deathFlash = Math.max(0, deathFlash - 0.07);
+  }
 }
 
 function drawMaze() {
   ctx.strokeStyle = '#fff';
   ctx.lineWidth = WALL;
   ctx.lineCap = 'square';
-
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const cell = maze[r][c];
-      const x = c * CELL;
-      const y = r * CELL;
-
+      const x = c * CELL, y = r * CELL;
       ctx.beginPath();
-      if (cell.walls.top) {
-        ctx.moveTo(x, y); ctx.lineTo(x + CELL, y);
-      }
-      if (cell.walls.right) {
-        ctx.moveTo(x + CELL, y); ctx.lineTo(x + CELL, y + CELL);
-      }
-      if (cell.walls.bottom) {
-        ctx.moveTo(x, y + CELL); ctx.lineTo(x + CELL, y + CELL);
-      }
-      if (cell.walls.left) {
-        ctx.moveTo(x, y); ctx.lineTo(x, y + CELL);
-      }
+      if (cell.walls.top)    { ctx.moveTo(x, y);        ctx.lineTo(x+CELL, y); }
+      if (cell.walls.right)  { ctx.moveTo(x+CELL, y);   ctx.lineTo(x+CELL, y+CELL); }
+      if (cell.walls.bottom) { ctx.moveTo(x, y+CELL);   ctx.lineTo(x+CELL, y+CELL); }
+      if (cell.walls.left)   { ctx.moveTo(x, y);        ctx.lineTo(x, y+CELL); }
       ctx.stroke();
     }
   }
-
-  // Outer border (except exit gap at bottom-right)
-  ctx.strokeStyle = '#fff';
+  // Outer border
   ctx.lineWidth = WALL + 1;
   ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.lineTo(canvas.width, 0);
-  ctx.lineTo(canvas.width, (rows-1) * CELL);
+  ctx.moveTo(0,0); ctx.lineTo(canvas.width,0); ctx.lineTo(canvas.width,(rows-1)*CELL);
   ctx.stroke();
   ctx.beginPath();
-  ctx.moveTo(canvas.width, rows * CELL);
-  ctx.lineTo(canvas.width, canvas.height);
-  ctx.lineTo(0, canvas.height);
-  ctx.lineTo(0, 0);
+  ctx.moveTo(canvas.width, rows*CELL); ctx.lineTo(canvas.width, canvas.height);
+  ctx.lineTo(0, canvas.height); ctx.lineTo(0, 0);
   ctx.stroke();
+}
+
+function drawHoles() {
+  const hr = CELL * 0.33;
+  for (const h of holes) {
+    // Outer dark ring
+    const grad = ctx.createRadialGradient(h.x, h.y, 0, h.x, h.y, hr);
+    grad.addColorStop(0,   '#000');
+    grad.addColorStop(0.55,'#0a0a0a');
+    grad.addColorStop(0.85,'#1a1a1a');
+    grad.addColorStop(1,   '#2a2a2a');
+    ctx.beginPath();
+    ctx.arc(h.x, h.y, hr, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    // Rim highlight
+    ctx.beginPath();
+    ctx.arc(h.x, h.y, hr, 0, Math.PI * 2);
+    ctx.strokeStyle = '#3a3a3a';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
 }
 
 function drawExit() {
-  const ex = (cols-1) * CELL;
-  const ey = (rows-1) * CELL;
-  // Highlight exit gap
+  const ex = (cols-1)*CELL, ey = (rows-1)*CELL;
   ctx.fillStyle = '#333';
-  ctx.fillRect(ex + WALL, ey + CELL - WALL * 2, CELL - WALL, WALL * 4);
-
-  // Exit arrow
+  ctx.fillRect(ex + WALL, ey + CELL - WALL*2, CELL - WALL, WALL*4);
   ctx.fillStyle = '#888';
-  ctx.font = `${CELL * 0.4}px monospace`;
+  ctx.font = `${CELL*0.4}px monospace`;
   ctx.textAlign = 'center';
-  ctx.fillText('▼', ex + CELL / 2, ey + CELL * 0.65);
+  ctx.fillText('▼', ex + CELL/2, ey + CELL*0.65);
 }
 
 function drawBall() {
-  const r = BALL_R;
-  // Shadow
+  let drawX = ball.x, drawY = ball.y, scale = 1, alpha = 1;
+
+  if (falling && fallTarget) {
+    drawX = fallStartX + (fallTarget.x - fallStartX) * fallProgress;
+    drawY = fallStartY + (fallTarget.y - fallStartY) * fallProgress;
+    scale = 1 - fallProgress;
+    alpha = 1 - fallProgress * 0.7;
+  }
+  if (scale <= 0.02) return;
+
+  ctx.globalAlpha = alpha;
+  const r = BALL_R * scale;
   ctx.beginPath();
-  ctx.arc(ball.x + 2, ball.y + 2, r, 0, Math.PI * 2);
+  ctx.arc(drawX + 2*scale, drawY + 2*scale, r, 0, Math.PI*2);
   ctx.fillStyle = 'rgba(0,0,0,0.5)';
   ctx.fill();
 
-  // Ball
-  const grad = ctx.createRadialGradient(ball.x - r*0.3, ball.y - r*0.3, r*0.1, ball.x, ball.y, r);
-  grad.addColorStop(0, '#fff');
+  const grad = ctx.createRadialGradient(drawX - r*0.3, drawY - r*0.3, r*0.1, drawX, drawY, r);
+  grad.addColorStop(0,   '#fff');
   grad.addColorStop(0.6, '#ccc');
-  grad.addColorStop(1, '#555');
+  grad.addColorStop(1,   '#555');
   ctx.beginPath();
-  ctx.arc(ball.x, ball.y, r, 0, Math.PI * 2);
+  ctx.arc(drawX, drawY, r, 0, Math.PI*2);
   ctx.fillStyle = grad;
   ctx.fill();
+  ctx.globalAlpha = 1;
 }
+
+// ─── Game loop ────────────────────────────────────────────────────────────────
 
 let lastTime = 0;
 function gameLoop(ts) {
   if (!running) return;
   const dt = Math.min((ts - lastTime) / 16.67, 3);
   lastTime = ts;
-
   update(dt);
   draw();
-
-  // Update timer
-  const elapsed = (performance.now() - startTime) / 1000;
-  timerEl.textContent = elapsed.toFixed(1) + 's';
-
+  timerEl.textContent = ((performance.now() - startTime) / 1000).toFixed(1) + 's';
   animFrame = requestAnimationFrame(gameLoop);
 }
 
 function winLevel() {
   running = false;
   cancelAnimationFrame(animFrame);
-  const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
-  winTimeEl.textContent = 'Time: ' + elapsed + 's';
+  winTimeEl.textContent = 'Time: ' + ((performance.now() - startTime) / 1000).toFixed(1) + 's';
   winOverlay.style.display = 'flex';
 }
 
@@ -480,56 +477,58 @@ document.getElementById('nextBtn').addEventListener('click', () => {
   animFrame = requestAnimationFrame(gameLoop);
 });
 
-// Device orientation
-function handleOrientation(e) {
-  // gamma = left/right tilt (-90 to 90)
-  // beta = front/back tilt (-180 to 180)
-  const gamma = e.gamma || 0; // x-axis tilt
-  const beta = e.beta || 0;   // y-axis tilt
+// ─── Device orientation ───────────────────────────────────────────────────────
 
-  // Normalize to -1..1 with ±30° = full speed
-  tiltX = Math.max(-1, Math.min(1, gamma / 30));
-  tiltY = Math.max(-1, Math.min(1, (beta - 20) / 30)); // 20° offset for natural hold angle
+function handleOrientation(e) {
+  tiltX = Math.max(-1, Math.min(1, (e.gamma || 0) / 30));
+  tiltY = Math.max(-1, Math.min(1, ((e.beta || 0) - 20) / 30));
 }
 
 async function requestPermission() {
   if (typeof DeviceOrientationEvent !== 'undefined' &&
       typeof DeviceOrientationEvent.requestPermission === 'function') {
-    // iOS 13+
     try {
-      const perm = await DeviceOrientationEvent.requestPermission();
-      if (perm === 'granted') {
+      if (await DeviceOrientationEvent.requestPermission() === 'granted')
         window.addEventListener('deviceorientation', handleOrientation);
-      }
-    } catch(e) {
-      console.log('Permission denied or error', e);
-    }
+    } catch(e) {}
   } else {
-    // Android / non-iOS
     window.addEventListener('deviceorientation', handleOrientation);
   }
 }
 
-// Settings panel
-const settingsBtn = document.getElementById('settingsBtn');
+// ─── Settings panel ───────────────────────────────────────────────────────────
+
+const settingsBtn   = document.getElementById('settingsBtn');
 const settingsPanel = document.getElementById('settings-panel');
-const gravitySlider = document.getElementById('gravitySlider');
-const gravityVal = document.getElementById('gravityVal');
 
 settingsBtn.addEventListener('click', () => {
   settingsPanel.style.display = settingsPanel.style.display === 'block' ? 'none' : 'block';
 });
-
 document.addEventListener('click', e => {
-  if (!settingsPanel.contains(e.target) && e.target !== settingsBtn) {
+  if (!settingsPanel.contains(e.target) && e.target !== settingsBtn)
     settingsPanel.style.display = 'none';
-  }
 });
 
-gravitySlider.addEventListener('input', () => {
-  GRAVITY = parseFloat(gravitySlider.value);
-  gravityVal.textContent = GRAVITY.toFixed(2);
+function bindSlider(id, valId, assign, transform) {
+  const slider = document.getElementById(id);
+  const display = document.getElementById(valId);
+  slider.addEventListener('input', () => {
+    const v = transform ? transform(parseFloat(slider.value)) : parseFloat(slider.value);
+    assign(v);
+    display.textContent = v.toFixed(id === 'holesSlider' ? 0 : 2);
+  });
+}
+
+bindSlider('gravitySlider',  'gravityVal',  v => { GRAVITY = v; });
+bindSlider('frictionSlider', 'frictionVal', v => { FRICTION = v; });
+bindSlider('speedSlider',    'speedVal',    v => { MAX_SPEED_M = v; });
+document.getElementById('holesSlider').addEventListener('input', function() {
+  HOLE_COUNT = parseInt(this.value);
+  document.getElementById('holesVal').textContent = HOLE_COUNT;
+  if (maze && !falling) holes = placeHoles();
 });
+
+// ─── Start ────────────────────────────────────────────────────────────────────
 
 document.getElementById('startBtn').addEventListener('click', async () => {
   await requestPermission();
